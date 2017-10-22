@@ -15,7 +15,7 @@ cflags = -std=c++17 -g -pthread -fno-rtti -fno-exceptions -fno-rtti -fconcepts $
 cxx_compiler = g++
 c_compiler = gcc
 
-libs = `freetype-config --libs` $
+libs = `freetype-config --libs` -Bstatic $
        -lglfw3 -lepoxy $
        -lGL -ldl -lX11 -lXrandr -lXrender -lXcursor -lXinerama -pthread
 
@@ -30,7 +30,7 @@ rule compilec
    description = Building file $in
 
 rule link
-   command = $cxx_compiler $in -o $out $libs
+   command = $cxx_compiler $in -o $out -Bstatic $libs
 
 build $builddir/renderutils.o:                      compile $srcdir/mxtimer.cpp
 build $builddir/cwrap.o:                            compilec $srcdir/cwrap.c
