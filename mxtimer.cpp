@@ -89,16 +89,11 @@ int init_gl()
 
 inline mush::string time_to_string(const std::chrono::milliseconds& ms)
 {
-    int hours = (ms.count() / 1000 / 60 / 60);
-    int minutes = (ms.count() / 1000 / 60) - hours;
-    int seconds = (ms.count() / 1000) - hours - minutes;
-    int milliseconds = ms.count() - hours - minutes - seconds;
-
     std::stringstream ss;
-    ss << std::setfill('0') << std::setw(2) << hours << ":" 
-       << std::setfill('0') << std::setw(2) << minutes % 60 << ":" 
-       << std::setfill('0') << std::setw(2) << seconds % 60 << "."
-       << std::setfill('0') << std::setw(2) << (milliseconds % 1000) / 10;
+    ss << std::setfill('0') << std::setw(2) << std::chrono::duration_cast<std::chrono::hours>(ms).count() << ":" 
+       << std::setfill('0') << std::setw(2) << std::chrono::duration_cast<std::chrono::minutes>(ms).count() % 60 << ":"
+       << std::setfill('0') << std::setw(2) << std::chrono::duration_cast<std::chrono::seconds>(ms).count() % 60 << "."
+       << std::setfill('0') << std::setw(2) << (ms.count() % 1000) / 10;
 
     return ss.str();
 }
@@ -511,6 +506,15 @@ class SplitTimer
 
             std::fstream file(filename, std::fstream::in);
             conf = mush::load_ini(file);
+            file.close();
+            
+            if (conf["general.record_file"] != "")
+            {
+                file.open(conf["general.record_file"], std::fstream::in);
+                if (file.is_open())
+                    conf.load_from_ini(file);
+                file.close();
+            }
 
             make_splits();
 
@@ -519,6 +523,15 @@ class SplitTimer
                 std::cout << "console requested\n";
                 command = std::make_unique<std::thread>(&SplitTimer::cmd, this);
             }
+        }
+
+        void save(const char* filename)
+        {
+            std::fstream file(filename, std::fstream::out | std::fstream::trunc);
+            for (mush::Option& opt : conf)
+            {
+            }
+            file.close();
         }
 
         void cmd()
@@ -552,6 +565,10 @@ class SplitTimer
                         splits[i].timer.reset();
                     }
                     make_splits();
+                }
+                else if (input == "save")
+                {
+                    //TODO: SAVE
                 }
                 else if (input == "window_size")
                 {
