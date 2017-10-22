@@ -1,0 +1,43 @@
+#build.ninja
+
+srcdir = .
+builddir = obj
+bindir = bin
+
+# linux cmd
+#g++ sst2.cpp L. -lglfw3_static -lGL -ldl -lX11 -lXrandr -lXrender -lXcursor -lXinerama `freetype-config --libs`
+
+cflags = -std=c++17 -g -pthread -fno-rtti -fno-exceptions -fno-rtti -fconcepts $
+         -I.. -Iglad/include $
+         `sdl2-config --cflags` $
+         `freetype-config --cflags` $
+         -fdiagnostics-color=always -Wall -Wno-trigraphs
+
+cxx_compiler = g++
+c_compiler = gcc
+
+libs = -Llib $
+       `freetype-config --libs` $
+       -lglfw3_static -lepoxy $
+       -lGL -ldl -lX11 -lXrandr -lXrender -lXcursor -lXinerama -pthread
+
+rule compile
+   command = $cxx_compiler -MMD -MT $out -MF $out.d $cflags -c $in -o $out
+   description = Building file $in
+   depfile = $out.d
+   deps = gcc
+
+rule compilec
+   command = $c_compiler -c $in -o $out $ccflags
+   description = Building file $in
+
+rule link
+   command = $cxx_compiler $in -o $out $libs
+
+build $builddir/renderutils.o:                      compile $srcdir/mxtimer.cpp
+build $builddir/cwrap.o:                            compilec $srcdir/cwrap.c
+
+build $bindir/mxtimer:                              link    $builddir/renderutils.o $
+                                                            $builddir/cwrap.o
+
+default $bindir/mxtimer
