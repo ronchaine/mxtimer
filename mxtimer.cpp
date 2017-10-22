@@ -323,6 +323,14 @@ class SplitTimer
             return total;
         }
 
+        std::chrono::milliseconds render_interval()
+        {
+            if (conf["general.render_wait"] == "")
+                return std::chrono::milliseconds(0);
+            else
+                return std::chrono::milliseconds(conf["general.render_wait"].to_value<uint32_t>());
+        }
+
         void draw_split(size_t index, uint32_t x, uint32_t y)
         {
             if (index >= splits.size() || index < 0)
@@ -574,26 +582,21 @@ int main()
     SplitTimer st;
     st.load("alttprando.ini");
 
-    Timer<std::chrono::steady_clock> ft;
-    ft.start();
-
     while(!glfwWindowShouldClose(window) && alive)
     {
-        if (ft.current() > std::chrono::milliseconds(100))
+        glClear(GL_COLOR_BUFFER_BIT);
+
+        st.draw_splits();
+
+        glfwSwapBuffers(window);
+        if (st.running())
         {
-            glClear(GL_COLOR_BUFFER_BIT);
-
-            st.draw_splits();
-
-            glfwSwapBuffers(window);
-            if (st.running())
-                glfwPollEvents();
-            else
-                glfwWaitEvents();
-            ft.reset();
+            glfwPollEvents();
+            std::this_thread::sleep_for(st.render_interval());
         }
+        else
+            glfwWaitEvents();
     }
 
-//    c.join();
     return 0;
 }
