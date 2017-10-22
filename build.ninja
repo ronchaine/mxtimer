@@ -8,17 +8,15 @@ bindir = bin
 #g++ sst2.cpp L. -lglfw3_static -lGL -ldl -lX11 -lXrandr -lXrender -lXcursor -lXinerama `freetype-config --libs`
 
 cflags = -std=c++17 -g -pthread -fno-rtti -fno-exceptions -fno-rtti -fconcepts $
-         -I.. -Iglad/include $
-         `sdl2-config --cflags` $
+         -I.. $
          `freetype-config --cflags` $
          -fdiagnostics-color=always -Wall -Wno-trigraphs
 
 cxx_compiler = g++
 c_compiler = gcc
 
-libs = -Llib $
-       `freetype-config --libs` $
-       -lglfw3_static -lepoxy $
+libs = `freetype-config --libs` $
+       -lglfw3 -lepoxy $
        -lGL -ldl -lX11 -lXrandr -lXrender -lXcursor -lXinerama -pthread
 
 rule compile
