@@ -563,14 +563,22 @@ class SplitTimer
                     for (size_t i = 0; i < splits.size(); ++i)
                     {
                         if (splits[i].name == mush::string(input))
+                        {
                             switch_to_split(splits[i].name);
+                            std::cout << ">" << std::flush;
+                            continue;
+                        }
 
                         for (auto& sc : splits[i].shortcuts)
                             if (mush::string(input) == sc)
+                            {
                                 switch_to_split(splits[i].name);
+                                std::cout << ">" << std::flush;
+                                continue;
+                            }
                     }
                 }
-                std::cout << ">" << std::flush;
+                std::cout << "Unknown command\n>" << std::flush;
             }
         }
 };
