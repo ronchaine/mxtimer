@@ -171,6 +171,8 @@ class Split
     public:
         mush::string                                image;
         mush::string                                name;
+        
+        mush::string                                conf_path;
 
         std::vector<mush::string>                   shortcuts;
 
@@ -440,6 +442,11 @@ class SplitTimer
         void switch_to_split(const mush::string& split_name)
         {
             size_t index = get_split_index(split_name);
+            if (index == 0)
+            {
+                std::cout << "Trying to switch to active split\n";
+                return;
+            }
             std::cout << "Switching active split to '" << split_name << "'\n";
             if (splits[0].timer.running() == true)
             {
@@ -480,6 +487,8 @@ class SplitTimer
 
                     Split& mod = splits[split_index[parsed_option[1]]];
                     
+                    mod.conf_path = "split." + parsed_option[1];
+
                     if (parsed_option[2] == "name")
                         mod.name = opt.value;
                     else if (parsed_option[2] == "image")
@@ -516,6 +525,14 @@ class SplitTimer
                 file.close();
             }
 
+            for (auto& f : conf["general.include"].split(","))
+            {
+                file.open(f, std::fstream::in);
+                if (file.is_open())
+                    conf.load_from_ini(file);
+                file.close();
+            }
+
             make_splits();
 
             if (conf["general.use_console"] == "true")
@@ -525,12 +542,22 @@ class SplitTimer
             }
         }
 
-        void save(const char* filename)
+        void update_records(const char* filename)
         {
             std::fstream file(filename, std::fstream::out | std::fstream::trunc);
-            for (mush::Option& opt : conf)
+
+            for (Split& s : splits)
             {
+                if ((s.timer.current() != std::chrono::milliseconds(0)) || s.records.attempts > 0)
+                {
+                    s.records.attempts++;
+                    std::chrono::milliseconds average = (s.records.average + s.timer.current()) / s.records.attempts;
+                    file << s.conf_path << ".best=" << time_to_string(s.timer.current()) << "\n";
+                    file << s.conf_path << ".average=" << time_to_string(average) << "\n";
+                    file << s.conf_path << ".attempts=" << s.records.attempts << "\n";
+                }
             }
+
             file.close();
         }
 
@@ -568,7 +595,23 @@ class SplitTimer
                 }
                 else if (input == "save")
                 {
-                    //TODO: SAVE
+                    if (conf["general.record_file"] != "")
+                        update_records(conf["general.record_file"].std_str().c_str());
+                    else
+                        std::cout << "overwriting original .ini file not implemented, use general.record_file option\n";
+                }
+                else if (input == "done")
+                {
+                    splits[0].timer.stop();
+
+                    // This shouldn't be needed, but it's there for now
+                    for (size_t i = 1; i < splits.size(); ++i)
+                        splits[i].timer.stop();
+
+                    if (conf["general.record_file"] != "")
+                        update_records(conf["general.record_file"].std_str().c_str());
+                    else
+                        std::cout << "overwriting original .ini file not implemented, use general.record_file option\n";
                 }
                 else if (input == "window_size")
                 {
@@ -576,6 +619,7 @@ class SplitTimer
                 }
                 else
                 {
+                    bool found = false;
                     // split names / shortcuts
                     for (size_t i = 0; i < splits.size(); ++i)
                     {
@@ -583,7 +627,8 @@ class SplitTimer
                         {
                             switch_to_split(splits[i].name);
                             std::cout << ">" << std::flush;
-                            continue;
+                            found = true;
+                            break;
                         }
 
                         for (auto& sc : splits[i].shortcuts)
@@ -591,11 +636,14 @@ class SplitTimer
                             {
                                 switch_to_split(splits[i].name);
                                 std::cout << ">" << std::flush;
-                                continue;
+                                found = true;
+                                break;
                             }
                     }
+                    if (found) continue;
+                    std::cout << "Unknown command\n";
                 }
-                std::cout << "Unknown command\n>" << std::flush;
+                std::cout << ">" << std::flush;
             }
         }
 };
