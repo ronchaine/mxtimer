@@ -550,7 +550,9 @@ class SplitTimer
             {
                 if ((s.timer.current() != std::chrono::milliseconds(0)) || s.records.attempts > 0)
                 {
-                    s.records.attempts++;
+                    if (s.timer.current() != std::chrono::milliseconds(0))
+                        s.records.attempts++;
+
                     std::chrono::milliseconds average = (s.records.average + s.timer.current()) / s.records.attempts;
                     file << s.conf_path << ".best=" << time_to_string(s.timer.current()) << "\n";
                     file << s.conf_path << ".average=" << time_to_string(average) << "\n";
